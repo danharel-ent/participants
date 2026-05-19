@@ -62,8 +62,15 @@ function recordKey(key: string) {
 }
 
 async function createRedisStore(): Promise<RedeemStore | null> {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Support both raw Upstash env names and Vercel's KV-marketplace naming so
+  // that provisioning Upstash via `vercel integration add upstash/upstash-kv`
+  // "just works" without any extra wiring.
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
+    process.env.KV_REST_API_URL?.trim();
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
+    process.env.KV_REST_API_TOKEN?.trim();
   if (!url || !token) return null;
 
   const { Redis } = await import("@upstash/redis");
