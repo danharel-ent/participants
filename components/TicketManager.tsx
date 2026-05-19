@@ -284,6 +284,7 @@ export default function TicketManager({
   const [listQuery, setListQuery] = useState("");
   const [eventFilter, setEventFilter] = useState("הכל");
   const [logoutBusy, setLogoutBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -505,6 +506,34 @@ export default function TicketManager({
       return matchEvent && matchQuery;
     });
   }, [remaining, listQuery, eventFilter]);
+
+  const exportEligibleToExcel = useCallback(async () => {
+    if (filtered.length === 0) {
+      showToast("אין זכאים לייצוא");
+      return;
+    }
+    setExportBusy(true);
+    try {
+      const XLSX = await import("xlsx");
+      const rows = filtered.map((p, i) => ({
+        "מספר סידורי": i + 1,
+        שם: p.שם,
+        אירוע: p.אירוע,
+        טלפון: p.טלפון,
+        "מספר הזמנה": p.order_id,
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Eligible");
+      const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+      XLSX.writeFile(wb, `eligible-live-${stamp}.xlsx`);
+      showToast(`יוצא קובץ Excel עם ${rows.length} זכאים`);
+    } catch {
+      showToast("ייצוא Excel נכשל — נסו שוב");
+    } finally {
+      setExportBusy(false);
+    }
+  }, [filtered, showToast]);
 
   const colorFor = (event: string) =>
     eventColors[event] ?? eventColors["הרצליה זיגו"];
@@ -746,6 +775,18 @@ export default function TicketManager({
                   </button>
                 );
               })}
+            </div>
+            <div className="activity-controls">
+              <button
+                type="button"
+                className="rbtn rbtn-touch"
+                onClick={exportEligibleToExcel}
+                disabled={exportBusy || filtered.length === 0}
+              >
+                {exportBusy
+                  ? "מייצא…"
+                  : `ייצוא לאקסל (${filtered.length})`}
+              </button>
             </div>
             {filtered.length === 0 ? (
               <div className="empty">
