@@ -24,10 +24,26 @@ npm run dev                     # בונה נתונים → מפעיל אתר ע
 |--------|-------|------|
 | `ACCESS_PASSWORD` | ✅ פרודקשן | סיסמת כניסה. ריק = גישה פתוחה (dev בלבד). |
 | `AUTH_SECRET` | ✅ פרודקשן | מחרוזת אקראית 32+ תווים לחתימת cookie. |
-| `UPSTASH_REDIS_REST_URL` | ✅ פרודקשן | חנות סנכרון בין instances ב-Vercel. |
-| `UPSTASH_REDIS_REST_TOKEN` | ✅ פרודקשן | טוקן REST של Upstash. |
+| `GITHUB_TOKEN` | ✅ פרודקשן | PAT עם Contents: Read/write לריפו של הפרויקט. |
+| `GITHUB_REPO` | ✅ פרודקשן | בפורמט `owner/repo` (לדוגמה `dandary/participants`). |
+| `GITHUB_BRANCH` | אופציונלי | ברירת מחדל: `main`. |
+| `GITHUB_REDEEMS_PATH` | אופציונלי | ברירת מחדל: `data/redeems.json`. |
+| `UPSTASH_REDIS_REST_URL` | חלופי | להעדפת Redis במקום GitHub (אופציונלי). |
+| `UPSTASH_REDIS_REST_TOKEN` | חלופי | טוקן REST של Upstash. |
 
-> בלי Redis המערכת נופלת ל-`memory` (אובד בריסטרט, לא משתף בין instances). לאחר שינוי משתנה — **Redeploy**.
+### Persistence — איך מימושים נשמרים
+
+המערכת בוחרת אחסון לפי הסדר הזה:
+
+1. **GitHub (ברירת מחדל)** — מימושים נשמרים בקובץ `data/redeems.json` בריפו דרך GitHub Contents API.
+   * עמיד בין deployments, cold starts, ועדכוני git.
+   * audit מלא בהיסטוריית commits.
+   * commits מסומנים `[skip ci]` כדי לא להפעיל deploy מחדש.
+   * concurrency-safe דרך SHA-based optimistic locking ועד 3 retries.
+2. **Upstash Redis** — נכנס לתוקף אם הגדרת `UPSTASH_REDIS_REST_URL`+`TOKEN` ואין `GITHUB_TOKEN`/`GITHUB_REPO`.
+3. **Memory (פיתוח בלבד)** — fallback אחרון. **מתאפס בכל cold start**. אם המערכת נכנסת למצב הזה — באנר אזהרה צהוב מופיע בראש האתר.
+
+> איך יוצרים `GITHUB_TOKEN`: github.com → Settings → Developer settings → Personal access tokens → **Fine-grained tokens** → Generate new token → Repository access: Only select repositories → סמנו את הריפו → Permissions → Repository → **Contents: Read and write**. הדביקו את הטוקן ב-Vercel ועשו Redeploy.
 
 ## תכונות מובנות
 
@@ -36,7 +52,8 @@ npm run dev                     # בונה נתונים → מפעיל אתר ע
 - **סנכרון חי** – polling כל 2.5 שניות, אינדיקטור online/offline בכל מסך.
 - **מימוש אופטימי** – לחיצה מעדכנת מיידית, השרת מאשר ברקע, fallback בטוח על שגיאה.
 - **לוג מימושים** – טאב "פעילות" עם זמן, מכשיר, וכפתור ביטול.
-- **קבלה גלובלית של מימוש** – נשמר ב-Redis, כל המכשירים רואים תוך פחות מ-3 שניות.
+- **קבלה גלובלית של מימוש** – נשמר ב-GitHub (או Redis), כל המכשירים רואים תוך פחות מ-3 שניות.
+- **Persistence אמיתי** – המימושים נשמרים מחוץ לזיכרון, יציבים בין logout/login, cold-start ו-deployments.
 - **Validation + structured errors** – כל ה-API מחזיר `{ok, data, meta}` או `{ok:false, error:{code,message}}`.
 - **A11y** – skip-link, aria-live, focus management, contrast ≥4.5:1, touch ≥44px.
 

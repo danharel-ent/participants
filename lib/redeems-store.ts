@@ -1,20 +1,11 @@
-export type RedeemRecord = {
-  key: string;
-  createdAt: string;
-  שם?: string;
-  אירוע?: string;
-  order_id?: string;
-  byHash?: string;
-};
+import { createGithubStore } from "./redeems-store-github";
+import type {
+  RedeemRecord,
+  RedeemStore,
+  RedeemStoreType,
+} from "./redeems-store-types";
 
-export type RedeemStore = {
-  type: "redis" | "memory";
-  listKeys: () => Promise<string[]>;
-  listRecords: () => Promise<RedeemRecord[]>;
-  addRedeem: (record: RedeemRecord) => Promise<{ created: boolean; record: RedeemRecord }>;
-  removeRedeem: (key: string) => Promise<boolean>;
-  clear: () => Promise<void>;
-};
+export type { RedeemRecord, RedeemStore, RedeemStoreType };
 
 const MEMORY_KEYS = "__participants_redeems_keys__";
 const MEMORY_RECORDS = "__participants_redeems_records__";
@@ -156,10 +147,21 @@ async function createRedisStore(): Promise<RedeemStore | null> {
 
 let cachedStorePromise: Promise<RedeemStore> | null = null;
 
+/**
+ * Persistence priority:
+ *   1. GitHub (durable in repo, auditable, default for this project)
+ *   2. Upstash Redis (alternative for high-volume scenarios)
+ *   3. Memory (development only — volatile across cold starts!)
+ */
 export function getRedeemStore(): Promise<RedeemStore> {
   if (!cachedStorePromise) {
-    cachedStorePromise = (async () =>
-      (await createRedisStore()) || createMemoryStore())();
+    cachedStorePromise = (async () => {
+      const github = createGithubStore();
+      if (github) return github;
+      const redis = await createRedisStore();
+      if (redis) return redis;
+      return createMemoryStore();
+    })();
   }
   return cachedStorePromise;
 }

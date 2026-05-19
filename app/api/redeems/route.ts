@@ -104,9 +104,14 @@ export async function DELETE(request: Request) {
   const key = safeString(body?.key, MAX_KEY_LEN);
   const removeAll = body?.all === true;
 
-  if (!removeAll && !key) {
-    await store.clear();
-  } else if (key) {
+  if (!key && !removeAll) {
+    return errorResponse(
+      "VALIDATION_ERROR",
+      "יש לציין `key` למחיקת רשומה או `all:true` לאיפוס כללי."
+    );
+  }
+
+  if (key) {
     await store.removeRedeem(key);
   } else if (removeAll) {
     await store.clear();

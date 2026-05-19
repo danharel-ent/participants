@@ -153,6 +153,46 @@ summary:focus-visible {
 }
 
 /* =========================================================
+   Storage warning banner (memory mode fallback)
+   ========================================================= */
+.storage-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--warn-soft);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: var(--r-md);
+  color: var(--text-1);
+  box-shadow: var(--shadow-sm);
+}
+
+.storage-warning-icon {
+  flex: none;
+  color: var(--warn);
+  margin-top: 2px;
+}
+
+.storage-warning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.storage-warning-text strong {
+  font-weight: 700;
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.storage-warning-text span {
+  color: var(--text-2);
+}
+
+/* =========================================================
    Topbar
    ========================================================= */
 .topbar-sticky {
@@ -1033,6 +1073,10 @@ summary:focus-visible {
   color: var(--danger);
 }
 
+.info-value.warn {
+  color: var(--warn);
+}
+
 .info-sub {
   font-size: 11px;
   color: var(--text-4);
@@ -1375,6 +1419,50 @@ summary:focus-visible {
 
 .login-input[aria-invalid="true"] {
   border-color: var(--danger);
+}
+
+.login-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.login-input-with-eye {
+  padding-inline-end: 52px;
+}
+
+.login-eye-btn {
+  position: absolute;
+  top: 50%;
+  inset-inline-end: 4px;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--text-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--t-fast) var(--ease-out),
+              background var(--t-fast) var(--ease-out);
+}
+
+.login-eye-btn:hover {
+  color: var(--text-1);
+  background: var(--surface-3);
+}
+
+.login-eye-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  color: var(--text-1);
+}
+
+.login-eye-btn[aria-pressed="true"] {
+  color: var(--brand);
 }
 
 .login-error {

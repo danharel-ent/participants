@@ -273,7 +273,9 @@ export default function TicketManager({
   const [syncedScanned, setSyncedScanned] = useState<Set<string>>(new Set());
   const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
   const [records, setRecords] = useState<RedeemRecord[]>([]);
-  const [syncStore, setSyncStore] = useState<"redis" | "memory" | "unknown">("unknown");
+  const [syncStore, setSyncStore] = useState<
+    "github" | "redis" | "memory" | "unknown"
+  >("unknown");
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [online, setOnline] = useState<boolean>(true);
   const [, setTick] = useState(0);
@@ -522,6 +524,34 @@ export default function TicketManager({
       {toast ? (
         <div className="ntf" role="status" aria-live="polite">
           {toast}
+        </div>
+      ) : null}
+
+      {syncStore === "memory" ? (
+        <div className="storage-warning" role="alert">
+          <svg
+            className="storage-warning-icon"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+          <div className="storage-warning-text">
+            <strong>אחסון זמני בלבד</strong>
+            <span>
+              חסר GITHUB_TOKEN/REPO — מימושים יאבדו ב־deployment או cold start.
+              הגדירו את המשתנים ב־Vercel כדי להפעיל persistence קבועה.
+            </span>
+          </div>
         </div>
       ) : null}
 
@@ -805,14 +835,30 @@ export default function TicketManager({
             <div className="system-grid">
               <div className="info-card">
                 <div className="info-label">חנות סנכרון</div>
-                <div className="info-value">
-                  {syncStore === "unknown" ? "טוען…" : syncStore}
+                <div
+                  className={`info-value ${
+                    syncStore === "memory"
+                      ? "warn"
+                      : syncStore === "unknown"
+                      ? ""
+                      : "ok"
+                  }`}
+                >
+                  {syncStore === "unknown"
+                    ? "טוען…"
+                    : syncStore === "github"
+                    ? "GitHub"
+                    : syncStore === "redis"
+                    ? "Redis"
+                    : "Memory"}
                 </div>
                 <div className="info-sub">
-                  {syncStore === "redis"
-                    ? "Redis · מסונכרן בין instances"
+                  {syncStore === "github"
+                    ? "נשמר בריפוזיטורי · עמיד בין deployments"
+                    : syncStore === "redis"
+                    ? "Upstash Redis · מסונכרן בין instances"
                     : syncStore === "memory"
-                    ? "Memory · מתאים לפיתוח בלבד"
+                    ? "זיכרון נדיף · יאופס בכל cold start"
                     : "—"}
                 </div>
               </div>

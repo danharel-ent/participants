@@ -89,11 +89,13 @@ export type RedeemRecord = {
   byHash?: string;
 };
 
+export type RedeemStoreKind = "github" | "redis" | "memory";
+
 export type RedeemsSnapshot = {
   keys: string[];
   records: RedeemRecord[];
   count: number;
-  store: "redis" | "memory";
+  store: RedeemStoreKind;
 };
 
 export type ApiOk<T> = {
