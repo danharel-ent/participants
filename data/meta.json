@@ -1,0 +1,159 @@
+{
+  "generatedAt": "2026-05-19T12:23:09.237Z",
+  "model": "purim-v6",
+  "sources": {
+    "goOut": [
+      "גו אאוט פרדס חנה.csv",
+      "משתמשים גו אאוט הרצליה.csv"
+    ],
+    "zygo": [
+      "WineNOT Back2Reality-bought-tickets.csv"
+    ],
+    "skipped": [
+      "¿WineNot_ - Back2Rea-bought-tickets.csv",
+      "הרצליה זיגו.xlsx"
+    ]
+  },
+  "byEvent": {
+    "פרדס חנה גו-אאוט": 143,
+    "הרצליה גו-אאוט": 245,
+    "הרצליה זיגו": 142,
+    "WineNot Back2Rea": 13
+  },
+  "totalEligible": 543,
+  "totalPreScanned": 208,
+  "pipeline": {
+    "step1_purimPaid": {
+      "description": "כרטיסים בתשלום ב-purim (ללא חינם/דחוי/הזמנה)",
+      "byEvent": {
+        "פרדס חנה גו-אאוט": 161,
+        "הרצליה גו-אאוט": 326,
+        "הרצליה זיגו": 175,
+        "WineNot Back2Rea": 89
+      },
+      "total": 751
+    },
+    "step2_afterPurimScans": {
+      "description": "אחרי הסרת נסרקו ב-purim (Scanned / Scanned_At / Scanned_By / scan_status / scan_time)",
+      "byEvent": {
+        "פרדס חנה גו-אאוט": 147,
+        "הרצליה גו-אאוט": 282,
+        "הרצליה זיגו": 145,
+        "WineNot Back2Rea": 13
+      },
+      "total": 587,
+      "removed": 164
+    },
+    "step3_afterFutureMatch": {
+      "description": "הוסרו: כרטיס חינם בשבועות או זיגו תל אביב רוקח (התאמה לפי שם/טלפון/מייל)",
+      "removedByEvent": {
+        "פרדס חנה גו-אאוט": 4,
+        "הרצליה גו-אאוט": 37,
+        "הרצליה זיגו": 3
+      },
+      "totalRemoved": 44,
+      "futureFiles": {
+        "שבועות": {
+          "totalRows": 119,
+          "freeTicketRows": 37,
+          "freeOrders": 37
+        },
+        "זיגו תל אביב רוקח": {
+          "totalRows": 175,
+          "freeTicketRows": 31,
+          "freeOrders": 31
+        }
+      },
+      "futureFreeTicketCount": 68,
+      "uniqueFutureIdentities": {
+        "phones": 31,
+        "emails": 0,
+        "names": 66
+      }
+    },
+    "step4_finalEligible": {
+      "description": "זכאים סופיים באתר",
+      "byEvent": {
+        "פרדס חנה גו-אאוט": 143,
+        "הרצליה גו-אאוט": 245,
+        "הרצליה זיגו": 142,
+        "WineNot Back2Rea": 13
+      },
+      "total": 543
+    }
+  },
+  "report": {
+    "פרדס חנה גו-אאוט": {
+      "file": "גו אאוט פרדס חנה.csv",
+      "rows": 163,
+      "paidEligiblePool": 161,
+      "excluded": {
+        "rejected": 0,
+        "free": 2,
+        "scanned": 14,
+        "identityScanned": 0
+      },
+      "removedScanned": 14,
+      "afterScan": 147
+    },
+    "הרצליה גו-אאוט": {
+      "file": "משתמשים גו אאוט הרצליה.csv",
+      "rows": 390,
+      "paidEligiblePool": 326,
+      "excluded": {
+        "rejected": 54,
+        "free": 10,
+        "scanned": 42,
+        "identityScanned": 2
+      },
+      "removedScanned": 44,
+      "afterScan": 282
+    },
+    "הרצליה זיגו": {
+      "file": "WineNOT Back2Reality-bought-tickets.csv",
+      "rows": 175,
+      "paidEligiblePool": 175,
+      "excluded": {
+        "free": 0,
+        "scanned": 26,
+        "identityScanned": 4
+      },
+      "removedScanned": 30,
+      "afterScan": 145
+    },
+    "WineNot Back2Rea": {
+      "file": "WineNOT Back2Reality-bought-tickets.csv",
+      "rows": 89,
+      "paidEligiblePool": 89,
+      "excluded": {
+        "free": 0,
+        "scanned": 75,
+        "identityScanned": 1
+      },
+      "removedScanned": 76,
+      "afterScan": 13
+    }
+  },
+  "eventColors": {
+    "הרצליה זיגו": {
+      "a": "#e94560",
+      "t": "rgba(233,69,96,.18)",
+      "tc": "#f87171"
+    },
+    "פרדס חנה גו-אאוט": {
+      "a": "#8b5cf6",
+      "t": "rgba(139,92,246,.18)",
+      "tc": "#a78bfa"
+    },
+    "הרצליה גו-אאוט": {
+      "a": "#3b82f6",
+      "t": "rgba(59,130,246,.18)",
+      "tc": "#60a5fa"
+    },
+    "WineNot Back2Rea": {
+      "a": "#ec4899",
+      "t": "rgba(236,72,153,.18)",
+      "tc": "#f472b6"
+    }
+  }
+}
