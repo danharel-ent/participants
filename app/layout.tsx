@@ -14,8 +14,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#0d1117",
 };
@@ -39,7 +37,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <a className="skip-link" href="#main-content">
+          דלג לתוכן הראשי
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

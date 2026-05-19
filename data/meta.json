@@ -1,57 +1,58 @@
 {
-  "generatedAt": "2026-05-19T12:23:09.237Z",
-  "model": "purim-v6",
+  "generatedAt": "2026-05-19T18:15:29.116Z",
+  "model": "purim-v8",
   "sources": {
     "goOut": [
       "גו אאוט פרדס חנה.csv",
       "משתמשים גו אאוט הרצליה.csv"
     ],
     "zygo": [
-      "WineNOT Back2Reality-bought-tickets.csv"
+      "WineNOT Back2Reality-bought-tickets.csv",
+      "¿WineNot_ - Back2Rea-bought-tickets.csv"
     ],
     "skipped": [
-      "¿WineNot_ - Back2Rea-bought-tickets.csv",
       "הרצליה זיגו.xlsx"
     ]
   },
   "byEvent": {
-    "פרדס חנה גו-אאוט": 143,
-    "הרצליה גו-אאוט": 245,
-    "הרצליה זיגו": 142,
-    "WineNot Back2Rea": 13
+    "פרדס חנה גו-אאוט": 137,
+    "הרצליה גו-אאוט": 228,
+    "הרצליה זיגו": 144,
+    "פרדס חנה זיגו": 86
   },
-  "totalEligible": 543,
-  "totalPreScanned": 208,
+  "totalEligible": 595,
+  "totalPreScanned": 260,
   "pipeline": {
     "step1_purimPaid": {
       "description": "כרטיסים בתשלום ב-purim (ללא חינם/דחוי/הזמנה)",
       "byEvent": {
         "פרדס חנה גו-אאוט": 161,
         "הרצליה גו-אאוט": 326,
-        "הרצליה זיגו": 175,
-        "WineNot Back2Rea": 89
+        "הרצליה זיגו": 264,
+        "פרדס חנה זיגו": 104
       },
-      "total": 751
+      "total": 855
     },
     "step2_afterPurimScans": {
       "description": "אחרי הסרת נסרקו ב-purim (Scanned / Scanned_At / Scanned_By / scan_status / scan_time)",
       "byEvent": {
         "פרדס חנה גו-אאוט": 147,
         "הרצליה גו-אאוט": 282,
-        "הרצליה זיגו": 145,
-        "WineNot Back2Rea": 13
+        "הרצליה זיגו": 158,
+        "פרדס חנה זיגו": 95
       },
-      "total": 587,
-      "removed": 164
+      "total": 682,
+      "removed": 173
     },
     "step3_afterFutureMatch": {
       "description": "הוסרו: כרטיס חינם בשבועות או זיגו תל אביב רוקח (התאמה לפי שם/טלפון/מייל)",
       "removedByEvent": {
         "פרדס חנה גו-אאוט": 4,
         "הרצליה גו-אאוט": 37,
-        "הרצליה זיגו": 3
+        "הרצליה זיגו": 3,
+        "פרדס חנה זיגו": 9
       },
-      "totalRemoved": 44,
+      "totalRemoved": 53,
       "futureFiles": {
         "שבועות": {
           "totalRows": 119,
@@ -71,15 +72,28 @@
         "names": 66
       }
     },
+    "step4_afterRedeemedXlsx": {
+      "description": "הוסרו: נמצאו בקובץ כרטיסים שמומשו (טלפון/שם)",
+      "file": "future projects/כרטיסים שמומשו.xlsx",
+      "sourceRows": 264,
+      "rowsWithoutPhone": 61,
+      "removedByEvent": {
+        "פרדס חנה גו-אאוט": 6,
+        "הרצליה גו-אאוט": 17,
+        "הרצליה זיגו": 11
+      },
+      "totalRemoved": 34,
+      "fuzzyNameRemoved": 0
+    },
     "step4_finalEligible": {
       "description": "זכאים סופיים באתר",
       "byEvent": {
-        "פרדס חנה גו-אאוט": 143,
-        "הרצליה גו-אאוט": 245,
-        "הרצליה זיגו": 142,
-        "WineNot Back2Rea": 13
+        "פרדס חנה גו-אאוט": 137,
+        "הרצליה גו-אאוט": 228,
+        "הרצליה זיגו": 144,
+        "פרדס חנה זיגו": 86
       },
-      "total": 543
+      "total": 595
     }
   },
   "report": {
@@ -111,27 +125,27 @@
     },
     "הרצליה זיגו": {
       "file": "WineNOT Back2Reality-bought-tickets.csv",
-      "rows": 175,
-      "paidEligiblePool": 175,
+      "rows": 264,
+      "paidEligiblePool": 264,
       "excluded": {
         "free": 0,
-        "scanned": 26,
-        "identityScanned": 4
+        "scanned": 101,
+        "identityScanned": 5
       },
-      "removedScanned": 30,
-      "afterScan": 145
+      "removedScanned": 106,
+      "afterScan": 158
     },
-    "WineNot Back2Rea": {
-      "file": "WineNOT Back2Reality-bought-tickets.csv",
-      "rows": 89,
-      "paidEligiblePool": 89,
+    "פרדס חנה זיגו": {
+      "file": "¿WineNot_ - Back2Rea-bought-tickets.csv",
+      "rows": 104,
+      "paidEligiblePool": 104,
       "excluded": {
         "free": 0,
-        "scanned": 75,
-        "identityScanned": 1
+        "scanned": 9,
+        "identityScanned": 0
       },
-      "removedScanned": 76,
-      "afterScan": 13
+      "removedScanned": 9,
+      "afterScan": 95
     }
   },
   "eventColors": {
@@ -150,7 +164,7 @@
       "t": "rgba(59,130,246,.18)",
       "tc": "#60a5fa"
     },
-    "WineNot Back2Rea": {
+    "פרדס חנה זיגו": {
       "a": "#ec4899",
       "t": "rgba(236,72,153,.18)",
       "tc": "#f472b6"

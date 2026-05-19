@@ -2,10 +2,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import {
-  parseCsv,
-  readText,
   normalizeZygoRow,
-  classifyZygoEvent,
+  zygoEventFromFilename,
   discoverPurimSources,
   shouldSkipPurimFile,
 } from "../lib/load-sources.mjs";
@@ -73,7 +71,7 @@ const byEvent = new Map();
 for (const { fileName, rows } of zygo) {
   for (const raw of rows) {
     const row = normalizeZygoRow(raw);
-    const ev = classifyZygoEvent(row);
+    const ev = zygoEventFromFilename(fileName);
     if (!byEvent.has(ev)) byEvent.set(ev, { rows: [], files: new Set() });
     byEvent.get(ev).rows.push(row);
     byEvent.get(ev).files.add(fileName);
@@ -81,15 +79,9 @@ for (const { fileName, rows } of zygo) {
 }
 
 for (const { fileName, rows } of zygo) {
-  console.log(fileName, "[zygo — split by ticket name]");
-  const counts = {};
-  for (const raw of rows) {
-    const ev = classifyZygoEvent(normalizeZygoRow(raw));
-    counts[ev] = (counts[ev] || 0) + 1;
-  }
-  for (const [ev, n] of Object.entries(counts)) {
-    console.log("  →", ev + ":", n, "rows");
-  }
+  console.log(fileName, "[zygo — by filename]");
+  const ev = zygoEventFromFilename(fileName);
+  console.log("  →", ev + ":", rows.length, "rows");
   console.log("");
 }
 

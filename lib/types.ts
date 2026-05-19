@@ -57,6 +57,10 @@ export type PipelineStep = {
     { totalRows: number; freeTicketRows: number; scannedRows?: number; activeOrders?: number }
   >;
   uniqueFreeIdentities?: { phones: number; emails: number };
+  fuzzyNameRemoved?: number;
+  sourceRows?: number;
+  rowsWithoutPhone?: number;
+  file?: string;
 };
 
 export type BuildMeta = {
@@ -69,8 +73,39 @@ export type BuildMeta = {
     step1_purimPaid: PipelineStep;
     step2_afterPurimScans: PipelineStep;
     step3_afterFutureMatch: PipelineStep;
+    step4_afterRedeemedXlsx?: PipelineStep;
     step4_finalEligible: PipelineStep;
   };
   report: Record<string, EventBuildReport>;
   eventColors: EventColors;
 };
+
+export type RedeemRecord = {
+  key: string;
+  createdAt: string;
+  שם?: string;
+  אירוע?: string;
+  order_id?: string;
+  byHash?: string;
+};
+
+export type RedeemsSnapshot = {
+  keys: string[];
+  records: RedeemRecord[];
+  count: number;
+  store: "redis" | "memory";
+};
+
+export type ApiOk<T> = {
+  ok: true;
+  data: T;
+  meta: { updatedAt: string };
+};
+
+export type ApiErr = {
+  ok: false;
+  error: { code: string; message: string; details?: unknown };
+  meta: { updatedAt: string };
+};
+
+export type ApiResponse<T> = ApiOk<T> | ApiErr;

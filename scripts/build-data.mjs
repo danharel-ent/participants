@@ -5,11 +5,12 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import XLSX from "xlsx";
 import {
   readText,
   parseCsv,
   normalizeZygoRow,
-  classifyZygoEvent,
+  zygoEventFromFilename,
   discoverPurimSources,
 } from "../lib/load-sources.mjs";
 
@@ -20,13 +21,14 @@ const EVENT_COLORS = {
   "הרצליה זיגו": { a: "#e94560", t: "rgba(233,69,96,.18)", tc: "#f87171" },
   "פרדס חנה גו-אאוט": { a: "#8b5cf6", t: "rgba(139,92,246,.18)", tc: "#a78bfa" },
   "הרצליה גו-אאוט": { a: "#3b82f6", t: "rgba(59,130,246,.18)", tc: "#60a5fa" },
-  "WineNot Back2Rea": { a: "#ec4899", t: "rgba(236,72,153,.18)", tc: "#f472b6" },
+  "פרדס חנה זיגו": { a: "#ec4899", t: "rgba(236,72,153,.18)", tc: "#f472b6" },
 };
 
 const FUTURE_FILES = [
   { file: "future projects/שבועות.csv", label: "שבועות" },
   { file: "future projects/זיגו תל אביב רוקח.csv", label: "זיגו תל אביב רוקח" },
 ];
+const REDEEMED_XLSX = "future projects/כרטיסים שמומשו.xlsx";
 
 // --- identity helpers ---
 export function normPhone(p) {
@@ -279,6 +281,90 @@ function buildFutureRegistry() {
   return { reg, byFile, freeTicketList };
 }
 
+/** קובץ מימושים חיצוני: firstName, lastName, phone */
+function buildRedeemedRegistry() {
+  const reg = createRegistry();
+  const full = path.join(ROOT, REDEEMED_XLSX);
+  if (!fs.existsSync(full)) {
+    return { reg, rows: 0, entries: [], missingPhone: 0 };
+  }
+  const wb = XLSX.readFile(full);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+  const entries = [];
+  let missingPhone = 0;
+  for (const row of rows) {
+    const first = String(row.firstName || row.FirstName || "").trim();
+    const last = String(row.lastName || row.LastName || "").trim();
+    const phone = normPhone(row.phone || row.Phone || "");
+    const name = normName([first, last]);
+    if (!phone) missingPhone++;
+    entries.push({ first, last, phone, name });
+    addReg(reg, {
+      phone,
+      email: "",
+      qrId: "",
+      orderId: "",
+      name,
+    });
+  }
+  return { reg, rows: rows.length, entries, missingPhone };
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a) return b.length;
+  if (!b) return a.length;
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function likelyRedeemedNameMatch(p, redeemedEntry) {
+  if (!redeemedEntry || redeemedEntry.phone) return false; // fuzzy only כשאין טלפון
+  const pName = normName(p.שם);
+  const rName = redeemedEntry.name;
+  if (!pName || !rName) return false;
+  if (pName === rName) return true;
+
+  const pTokens = pName.split(" ").filter(Boolean);
+  const rTokens = rName.split(" ").filter(Boolean);
+  if (pTokens.length < 2 || rTokens.length < 2) return false;
+
+  const pFirst = pTokens[0];
+  const pLast = pTokens[pTokens.length - 1];
+  const rFirst = rTokens[0];
+  const rLast = rTokens[rTokens.length - 1];
+
+  // תנאי סף קשיח: שם משפחה חייב להיות זהה או קרוב מאוד
+  const lastDist = levenshtein(pLast, rLast);
+  if (!(pLast === rLast || (pLast.length >= 4 && rLast.length >= 4 && lastDist <= 1))) {
+    return false;
+  }
+
+  const firstDist = levenshtein(pFirst, rFirst);
+  const firstClose =
+    pFirst === rFirst ||
+    pFirst.startsWith(rFirst) ||
+    rFirst.startsWith(pFirst) ||
+    (pFirst.length >= 4 && rFirst.length >= 4 && firstDist <= 1);
+  if (!firstClose) return false;
+
+  // בונוס ביטחון: מרחק קטן בשם המלא
+  const fullDist = levenshtein(pName, rName);
+  return fullDist <= 2 || (pTokens.length === rTokens.length && fullDist <= 3);
+}
+
 function processGoOut(fileName, event, globalScanned, rowsIn) {
   const rows = rowsIn ?? parseCsv(readText(path.join(PURIM_DIR, fileName)));
   const all = [];
@@ -394,6 +480,7 @@ export function buildAllData() {
     byFile: futureByFile,
     freeTicketList: futureFreeTickets,
   } = buildFutureRegistry();
+  const redeemed = buildRedeemedRegistry();
 
   const processed = [];
 
@@ -404,18 +491,17 @@ export function buildAllData() {
   const zygoByEvent = new Map();
   const zygoSourceFiles = new Map();
   for (const { fileName, rows } of zygoSources) {
+    const event = zygoEventFromFilename(fileName);
+    if (!zygoByEvent.has(event)) zygoByEvent.set(event, []);
     for (const raw of rows) {
-      const row = normalizeZygoRow(raw);
-      const event = classifyZygoEvent(row);
-      if (!zygoByEvent.has(event)) zygoByEvent.set(event, []);
-      zygoByEvent.get(event).push(row);
-      const files = zygoSourceFiles.get(event) || new Set();
-      files.add(fileName);
-      zygoSourceFiles.set(event, files);
+      zygoByEvent.get(event).push(normalizeZygoRow(raw));
     }
+    const files = zygoSourceFiles.get(event) || new Set();
+    files.add(fileName);
+    zygoSourceFiles.set(event, files);
   }
 
-  for (const event of ["הרצליה זיגו", "WineNot Back2Rea"]) {
+  for (const event of ["הרצליה זיגו", "פרדס חנה זיגו"]) {
     const rows = zygoByEvent.get(event) || [];
     const files = [...(zygoSourceFiles.get(event) || [])].join(", ") || null;
     if (rows.length === 0) {
@@ -448,7 +534,7 @@ export function buildAllData() {
   }
 
   const step3ByEvent = {};
-  const finalEligible = [];
+  const afterFutureEligible = [];
   const futureRemovedKeys = [];
   let step3Total = 0;
 
@@ -459,23 +545,43 @@ export function buildAllData() {
       step3Total++;
       continue;
     }
+    afterFutureEligible.push(p);
+  }
+
+  const step4ByEvent = {};
+  const step4RemovedKeys = [];
+  const finalEligible = [];
+  let step4TotalRemoved = 0;
+  let step4FuzzyRemoved = 0;
+  for (const p of afterFutureEligible) {
+    const directMatch = matches(redeemed.reg, idsParticipant(p));
+    const fuzzyNameMatch =
+      !directMatch &&
+      redeemed.entries.some((entry) => likelyRedeemedNameMatch(p, entry));
+    if (directMatch || fuzzyNameMatch) {
+      step4RemovedKeys.push(participantKey(p));
+      step4ByEvent[p.אירוע] = (step4ByEvent[p.אירוע] || 0) + 1;
+      step4TotalRemoved++;
+      if (fuzzyNameMatch) step4FuzzyRemoved++;
+      continue;
+    }
     finalEligible.push(p);
   }
 
   const participants = dedupe(finalEligible);
-  const step4ByEvent = {};
+  const step5ByEvent = {};
   for (const p of participants) {
-    step4ByEvent[p.אירוע] = (step4ByEvent[p.אירוע] || 0) + 1;
+    step5ByEvent[p.אירוע] = (step5ByEvent[p.אירוע] || 0) + 1;
   }
 
   const preScannedFlat = {};
-  for (const k of [...allRemovedKeys, ...futureRemovedKeys]) {
+  for (const k of [...allRemovedKeys, ...futureRemovedKeys, ...step4RemovedKeys]) {
     preScannedFlat[k] = true;
   }
 
   const meta = {
     generatedAt: new Date().toISOString(),
-    model: "purim-v6",
+    model: "purim-v8",
     sources: {
       goOut: goOutSources.map((s) => s.fileName),
       zygo: zygoSources.map((s) => s.fileName),
@@ -493,7 +599,7 @@ export function buildAllData() {
             })
         : [],
     },
-    byEvent: step4ByEvent,
+    byEvent: step5ByEvent,
     totalEligible: participants.length,
     totalPreScanned: Object.keys(preScannedFlat).length,
     pipeline: {
@@ -522,9 +628,18 @@ export function buildAllData() {
           names: futureReg.names.size,
         },
       },
+      step4_afterRedeemedXlsx: {
+        description: "הוסרו: נמצאו בקובץ כרטיסים שמומשו (טלפון/שם)",
+        file: REDEEMED_XLSX,
+        sourceRows: redeemed.rows,
+        rowsWithoutPhone: redeemed.missingPhone,
+        removedByEvent: step4ByEvent,
+        totalRemoved: step4TotalRemoved,
+        fuzzyNameRemoved: step4FuzzyRemoved,
+      },
       step4_finalEligible: {
         description: "זכאים סופיים באתר",
-        byEvent: step4ByEvent,
+        byEvent: step5ByEvent,
         total: participants.length,
       },
     },
