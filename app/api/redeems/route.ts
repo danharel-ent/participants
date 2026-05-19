@@ -37,13 +37,32 @@ async function snapshot() {
   };
 }
 
+function toReadableStoreError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("GitHub API 403")) {
+    return "שגיאת הרשאה ב-GitHub storage: בדקו של-GITHUB_TOKEN יש הרשאת Contents: Read and write לריפו הנכון.";
+  }
+  if (msg.includes("GitHub API 401")) {
+    return "GITHUB_TOKEN לא תקין או פג תוקף. עדכנו טוקן חדש ב-Vercel.";
+  }
+  if (msg.includes("GitHub API 404")) {
+    return "GITHUB_REPO או GITHUB_REDEEMS_PATH לא נמצאו. בדקו הגדרות סביבה.";
+  }
+  return "שגיאה בשכבת האחסון. נסו שוב בעוד רגע.";
+}
+
 export async function GET(request: Request) {
   const limit = checkRateLimit(`redeems:get:${clientFingerprint(request)}`, 120, 60 * 1000);
   if (!limit.ok) {
     return errorResponse("RATE_LIMITED", "יותר מדי בקשות. נסו שוב בעוד מספר שניות.");
   }
-  const data = await snapshot();
-  return okResponse(data);
+  try {
+    const data = await snapshot();
+    return okResponse(data);
+  } catch (err) {
+    console.error("GET /api/redeems failed", err);
+    return errorResponse("SERVER_ERROR", toReadableStoreError(err));
+  }
 }
 
 export async function POST(request: Request) {
@@ -66,23 +85,28 @@ export async function POST(request: Request) {
     });
   }
 
-  const store = await getRedeemStore();
-  const record: RedeemRecord = {
-    key,
-    createdAt: new Date().toISOString(),
-    שם: safeString(body.שם, MAX_FIELD_LEN) || undefined,
-    אירוע: safeString(body.אירוע, MAX_FIELD_LEN) || undefined,
-    order_id: safeString(body.order_id, MAX_FIELD_LEN) || undefined,
-    byHash: await actorHash(),
-  };
+  try {
+    const store = await getRedeemStore();
+    const record: RedeemRecord = {
+      key,
+      createdAt: new Date().toISOString(),
+      שם: safeString(body.שם, MAX_FIELD_LEN) || undefined,
+      אירוע: safeString(body.אירוע, MAX_FIELD_LEN) || undefined,
+      order_id: safeString(body.order_id, MAX_FIELD_LEN) || undefined,
+      byHash: await actorHash(),
+    };
 
-  const result = await store.addRedeem(record);
-  const data = await snapshot();
-  return okResponse({
-    ...data,
-    status: result.created ? "created" : "exists",
-    record: result.record,
-  });
+    const result = await store.addRedeem(record);
+    const data = await snapshot();
+    return okResponse({
+      ...data,
+      status: result.created ? "created" : "exists",
+      record: result.record,
+    });
+  } catch (err) {
+    console.error("POST /api/redeems failed", err);
+    return errorResponse("SERVER_ERROR", toReadableStoreError(err));
+  }
 }
 
 type DeleteInput = { key?: unknown; all?: unknown };
@@ -100,23 +124,28 @@ export async function DELETE(request: Request) {
     body = null;
   }
 
-  const store = await getRedeemStore();
-  const key = safeString(body?.key, MAX_KEY_LEN);
-  const removeAll = body?.all === true;
+  try {
+    const store = await getRedeemStore();
+    const key = safeString(body?.key, MAX_KEY_LEN);
+    const removeAll = body?.all === true;
 
-  if (!key && !removeAll) {
-    return errorResponse(
-      "VALIDATION_ERROR",
-      "יש לציין `key` למחיקת רשומה או `all:true` לאיפוס כללי."
-    );
+    if (!key && !removeAll) {
+      return errorResponse(
+        "VALIDATION_ERROR",
+        "יש לציין `key` למחיקת רשומה או `all:true` לאיפוס כללי."
+      );
+    }
+
+    if (key) {
+      await store.removeRedeem(key);
+    } else if (removeAll) {
+      await store.clear();
+    }
+
+    const data = await snapshot();
+    return okResponse(data);
+  } catch (err) {
+    console.error("DELETE /api/redeems failed", err);
+    return errorResponse("SERVER_ERROR", toReadableStoreError(err));
   }
-
-  if (key) {
-    await store.removeRedeem(key);
-  } else if (removeAll) {
-    await store.clear();
-  }
-
-  const data = await snapshot();
-  return okResponse(data);
 }

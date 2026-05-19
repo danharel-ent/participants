@@ -35,16 +35,16 @@ type GhConfig = {
 };
 
 function readGhConfig(): GhConfig | null {
-  const token = process.env.GITHUB_TOKEN;
-  const repo = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN?.trim();
+  const repo = process.env.GITHUB_REPO?.trim();
   if (!token || !repo) return null;
   return {
     token,
     repo,
-    branch: process.env.GITHUB_BRANCH || "main",
-    path: process.env.GITHUB_REDEEMS_PATH || "data/redeems.json",
-    authorName: process.env.GITHUB_COMMIT_NAME || "WineNot Ops Bot",
-    authorEmail: process.env.GITHUB_COMMIT_EMAIL || "ops@winenot.local",
+    branch: process.env.GITHUB_BRANCH?.trim() || "main",
+    path: process.env.GITHUB_REDEEMS_PATH?.trim() || "data/redeems.json",
+    authorName: process.env.GITHUB_COMMIT_NAME?.trim() || "WineNot Ops Bot",
+    authorEmail: process.env.GITHUB_COMMIT_EMAIL?.trim() || "ops@winenot.local",
   };
 }
 
